@@ -1,0 +1,41 @@
+{
+    "name": {
+        "message": "Popup Tool"
+    },
+    "description": {
+        "message": "This feature of this extension is to pop up HTML5 video to a separate window (also supports Flash) Currently supported video sites are: Youtube, Bilibili, Tencent Video, Youku, Iqiyi, Betta Live. Videos on other websites can also be used, but not perfectly supported (less parts will be problematic). Window topping is not currently supported. Please use other tools for temporary use."
+    },
+    "toolBar_popup": {
+        "message": "Popup"
+    },
+    "toolBar_restore": {
+        "message": "Restore"
+    },
+    "toolBar_remember": {
+        "message": "Remember Location & Size"
+    },
+    "browserAction_enable": {
+        "message": "This page has a video that pops up automatically"
+    },
+    "browserAction_disable": {
+        "message": "There are no matching rules to automatically pop up the video, click to select the video."
+    },
+    "windowPosition": {
+        "message": "Window Position"
+    },
+    "windowPosition_center": {
+        "message": "Center"
+    },
+    "windowPosition_last": {
+        "message": "Use last position"
+    },
+    "windowSize": {
+        "message": "Window Size"
+    },
+    "windowSize_auto": {
+        "message": "Auto"
+    },
+    "windowSize_last": {
+        "message": "Use last size"
+    }
+}

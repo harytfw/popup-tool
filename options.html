@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Popup Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-size: 16px;
+
+            margin: 2% auto;
+
+            width: 60%;
+        }
+
+        fieldset {
+            margin-bottom: 4%;
+        }
+    </style>
+    <script src="./options.js"></script>
+</head>
+
+<body>
+    <form>
+
+        <!-- <fieldset>
+            <legend>杂项</legend>
+            <input type='checkbox' name='fixhistory' id='fixHistory'>
+            <label for='fixHistory'>修复弹窗后，当前标签不会进入历史记录的问题（需要请求新的权限）</label>
+        </fieldset> -->
+        <fieldset>
+            <legend i18n='windowPosition'></legend>
+            <input type='radio' name='position' value='center' id='center'>
+            <label for='center' i18n='windowPosition_center'></label>
+            <br>
+            <input type='radio' name='position' value='last' id='lastPosition'>
+            <label for='lastPosition' i18n='windowPosition_last'></label>
+        </fieldset>
+
+        <fieldset>
+            <legend i18n='windowSize'></legend>
+            <input type='radio' name='size' value='auto' id='auto'>
+            <label for='auto' i18n='windowSize_auto'></label>
+            <br>
+            <input type='radio' name='size' value='last' id='lastSize'>
+            <label for='lastSize' i18n='windowSize_last'></label>
+        </fieldset>
+    </form>
+</body>
+
+</html>

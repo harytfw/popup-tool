@@ -1,0 +1,44 @@
+{
+    "description": "__MSG_description__",
+    "manifest_version": 2,
+    "name": "__MSG_name__",
+    "version": "0.0.3",
+    "author": "harytfw",
+    "icons": {
+        "128": "./p-enable.png"
+    },
+    "permissions": [
+        "storage"
+    ],
+    "browser_action": {
+        "default_title": "Popup Tool"
+    },
+    "background": {
+        "scripts": [
+            "background.js"
+        ]
+    },
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": true
+    },
+    "content_scripts": [{
+        "run_at": "document_end",
+        "matches": [
+            "<all_urls>"
+        ],
+        "js": [
+            "content_script.js"
+        ],
+        "css": [
+            "content_script.css"
+        ]
+    }],
+    "default_locale": "en",
+    "applications": {
+        "gecko": {
+            "id": "popup-tool@harytfw",
+            "strict_min_version": "57.0"
+        }
+    }
+}
