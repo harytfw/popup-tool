@@ -661,6 +661,8 @@ async function onCreatePopupWindow() {
         block: "start",
         inline: "start"
     });
+    
+    popupToolBar.display(currentVideoElement)
 }
 
 
@@ -790,7 +792,7 @@ function main(event) {
         if (event.target.tagName === 'OBJECT' || event.target.tagName === 'EMBED') {
             // flash 播放器
             const rect = event.target.getBoundingClientRect()
-            if (rect.width <= MIN_VALID_WIDTH || rec.height <= MIN_VALID_HEIGHT) {
+            if (rect.width <= MIN_VALID_WIDTH || rect.height <= MIN_VALID_HEIGHT) {
                 currentContainer = currentVideoElement = null
             } else {
                 currentContainer = currentVideoElement = event.target
@@ -955,7 +957,7 @@ document.addEventListener('mousemove', event => {
         return
     }
     // 鼠标在指定时间内没有移动的话，自动隐藏 toolbar
-    popupToolBar.display(currentContainer)
+    popupToolBar.display(currentVideoElement)
     window.clearTimeout(timeoutId)
     timeoutId = setTimeout(() => {
         popupToolBar.remove()
