@@ -1,4 +1,4 @@
-﻿let currentVideoElement = null
+let currentVideoElement = null
 let currentContainer = null
 let videoHeight = -1
 let videoWidth = -1
@@ -109,7 +109,7 @@ class Toolbar {
 const popupToolBar = new Toolbar()
 
 class Fixup {
-    constructor() {}
+    constructor() { }
     matched(container, video, callback) { // 当fixup所在的规则成功匹配后 调用 matched
 
     }
@@ -211,6 +211,8 @@ const extensionRule = {
                     // TODO: 修复youtube 进度条
                     super()
                     this.style = null
+                    this.theaterFlag = undefined
+                    this.container = null
                 }
                 matched() {
                     const bottomControlBar = document.querySelector('.ytp-chrome-bottom')
@@ -261,38 +263,62 @@ const extensionRule = {
                         .html5-main-video{
                             width: 100% !important;
                             height: 100% !important;
+                            left: 0px !important;
                         }
                         .ytp-chrome-bottom{
-                            /*width: ${100- Math.round((24 / window.innerWidth)*100)}% !important;*/
+                            /*width: ${100 - Math.round((24 / window.innerWidth) * 100)}% !important;*/
                             bottom: 1.1% !important;
                         }
                     `)
                     this.style.id = 'youtube-popup-style'
                 }
-                afterCreate(container, video) {
-
-                    // const progressbar = document.querySelector('.ytp-progress-bar')
-                    // const timePercent = parseInt(progressbar.getAttribute('aria-valuenow'))/parseInt(progressbar.getAttribute('aria-valuemax'))
-
-                    // const bottombar = document.querySelector('.ytp-chrome-bottom')
-                    // const oldwidth = bottombar.getBoundingClientRect().width
-
+                beforeCreate(container, video, cb) {
+                    this.container = container
+                    if (this.isTheaterMode()) {
+                        cb({
+                            currentContainer: video
+                        })
+                    }
+                }
+                afterCreate(container, video, cb) {
                     document.head.appendChild(this.style)
                     this.removeScrollbar()
-                    this.triggerClick('.ytp-size-button')
-                    // const newwidth = bottombar.getBoundingClientRect().width
-                    // this.setFullWindow(container)
-                    // this.setFullWindow(video)
-                    // document.querySelector('#masthead-container').style.display = 'none'
-                    // this.triggerClick('#ytp-size-button').click()
+                    if (!this.isTheaterMode()) {
+                        this.theaterFlag = false
+                    }
+                    else {
+                        cb({
+                            currentContainer: this.container
+                        })
+                        this.theaterFlag = true
+                        // exit theater mode
+                        this.triggerClick('.ytp-size-button')
+                    }
+                    setTimeout(() => {
+                        // enter theater mode
+                        this.triggerClick('.ytp-size-button')
+                    }, 400)
+
                 }
                 afterDestory(container, video) {
                     this.style.remove()
                     this.restoreScrollbar()
-                    // this.unsetFullWindow(container)
-                    // this.unsetFullWindow(video)
-                    // document.querySelector('#masthead-container').style.display = ''
-                    // this.triggerClick('#ytp-size-button').click()
+                    if (this.theaterFlag === false) {
+                        this.triggerClick('.ytp-size-button')
+                    }
+                    this.theaterFlag = undefined
+                }
+                isTheaterMode() {
+                    const btn = document.querySelector('.ytp-size-button')
+                    if (!btn) return false
+                    //                   us       zh_cn   uk        german
+                    const keywords = ['Theater', '剧场', 'Cinema', 'Kinomodus']
+                    for (const k of keywords) {
+                        if (btn.title.startsWith(k)) {
+                            return false
+                        }
+                    }
+                    return true
                 }
             }
         },
@@ -510,6 +536,34 @@ const extensionRule = {
                 }
             }
         },
+        /*{
+            name: 'Kancollection',
+            test: /https?:\/\/www\.dmm\.com\/netgame\/social\/-\/gadgets\/=\/app_id=854854\//,
+            selector: '#game_frame',
+            fixup: new class extends Fixup {
+                constructor() {
+                    super()
+                }
+                matched(container, video, cb) {
+                    cb({
+                        currentVideoElement: container
+                    })
+                }
+                beforeCreate(container, video, cb) {
+                    cb({
+                        currentVideoElement: container
+                    })
+                }
+                afterCreate(container) {
+                    this.removeScrollbar()
+                    this.setFullWindow(container, true)
+                }
+                afterDestory(container) {
+                    this.unsetFullWindow(container, true)
+                    this.restoreScrollbar()
+                }
+            }
+        },*/
         {
             name: 'DEFAULT',
             test: /./,
@@ -661,7 +715,7 @@ async function onCreatePopupWindow() {
         block: "start",
         inline: "start"
     });
-    
+
     popupToolBar.display(currentVideoElement)
 }
 
@@ -684,7 +738,7 @@ function callbackForFixup(obj) {
     if (obj.currentContainer) {
         currentContainer = obj.currentContainer
     }
-    if (obj.currentVideoElement)[
+    if (obj.currentVideoElement) [
         currentVideoElement = obj.currentVideoElement
     ]
 }
@@ -847,7 +901,7 @@ class SelectableLayer {
         const subLayerPrototype = document.createElement('div')
         subLayerPrototype.setAttribute('style', `
             position:absolute;
-            z-index:${zIndex+1};
+            z-index:${zIndex + 1};
             background-color:#9c4324;
             opacity:0.5;
             cursor:pointer;
@@ -931,9 +985,9 @@ window.addEventListener('resize', event => {
 
     }
 }, {
-    capture: true,
-    passive: false
-})
+        capture: true,
+        passive: false
+    })
 
 document.addEventListener('mouseover', main, {
     capture: true,
@@ -963,6 +1017,6 @@ document.addEventListener('mousemove', event => {
         popupToolBar.remove()
     }, timeToRemove)
 }, {
-    capture: true,
-    passive: true
-})
+        capture: true,
+        passive: true
+    })
