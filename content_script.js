@@ -27,6 +27,8 @@ class Toolbar {
         this.toolbar.querySelectorAll('div').forEach(node => {
             node.addEventListener('click', this.onClick.bind(this))
         })
+
+        this.fixupInstance = null
     }
     display(locator) {
         // try {
@@ -77,32 +79,59 @@ class Toolbar {
     async onClick(event) {
         const target = event.target
         // hideOtherElement(currentVideoElement)
-        const fixupInstance = extensionRule.getRule().fixup
+        this.fixupInstance = extensionRule.getRule().fixup
         if (target.id === 'x-popup') {
-            fixupInstance && fixupInstance.beforeCreate(currentContainer, currentVideoElement, callbackForFixup)
-
-            const rect = currentContainer.getBoundingClientRect()
-            videoHeight = rect.height
-            videoWidth = rect.width
-            await browser.runtime.sendMessage({
-                command: 'create',
-                height: rect.height,
-                width: rect.width,
-            })
-            onCreatePopupWindow()
-            fixupInstance && fixupInstance.afterCreate(currentContainer, currentVideoElement, callbackForFixup)
+            this.doPopup();
         } else if (target.id === 'x-restore') {
-            fixupInstance && fixupInstance.beforeDestory(currentContainer, currentVideoElement, callbackForFixup)
-            await browser.runtime.sendMessage({
-                command: 'destory',
-            })
-            afterDestoryPopupWindow()
-            fixupInstance && fixupInstance.afterDestory(currentContainer, currentVideoElement, callbackForFixup)
-        } else if (target.id === 'x-remember-location') {
-            await browser.runtime.sendMessage({
-                command: 'rememberLocation'
-            })
+            this.doRestore();
         }
+        else if (target.id === 'x-remember-location') {
+            this.doRemember();
+        }
+    }
+
+    async doPopup() {
+        this.fixupInstance && this.fixupInstance.beforeCreate(currentContainer, currentVideoElement, callbackForFixup)
+        const rect = currentContainer.getBoundingClientRect()
+        videoHeight = rect.height
+        videoWidth = rect.width
+        await browser.runtime.sendMessage({
+            command: 'create',
+            height: rect.height,
+            width: rect.width,
+        })
+        this.showRestoreBtn()
+        this.hidePopupBtn()
+        console.log('popup window is created')
+        isPopup = true
+        // currentContainer.scrollIntoView({
+        //     behavior: "instant",
+        //     block: "start",
+        //     inline: "start"
+        // });
+        popupToolBar.display(currentVideoElement)
+        this.fixupInstance && this.fixupInstance.afterCreate(currentContainer, currentVideoElement, callbackForFixup)
+    }
+
+    async doRestore() {
+        this.fixupInstance && this.fixupInstance.beforeDestory(currentContainer, currentVideoElement, callbackForFixup)
+        await browser.runtime.sendMessage({
+            command: 'destory',
+        })
+
+        isPopup = false
+        console.log('popup window is destory')
+        const el = document.querySelector('#popup-tool-style')
+        el && el.remove()
+        this.showPopupBtn()
+        this.hideRestoreBtn()
+
+        this.fixupInstance && this.fixupInstance.afterDestory(currentContainer, currentVideoElement, callbackForFixup)
+    }
+    async doRemember() {
+        await browser.runtime.sendMessage({
+            command: 'rememberLocation'
+        })
     }
 }
 
@@ -469,15 +498,18 @@ const extensionRule = {
         {
             name: 'mgtv',
             test: /https?:\/\/www\.mgtv\.com\/b\/\d+\/\d+\.html/,
+            selector: '.c-player-video',
             fixup: new class extends Fixup {
                 constructor() {
                     super()
                 }
                 afterCreate(container, video) {
-                    setTimeout(() => {
-                        this.removeScrollbar()
-                        setStyleArrtibute(video, `position: fixed;top: 0px; left: 0px; z-index: 9999;`)
-                    }, 800)
+                    this.removeScrollbar()
+                    this.triggerClick('mango-webscreen')
+                }
+                afterDestory(container, video) {
+                    this.restoreScrollbar()
+                    this.triggerClick('mango-webscreen')
                 }
             }
         },
@@ -690,45 +722,7 @@ function restoreStyleArrtibute(target) {
 }
 
 
-function hideOtherElement(elem) {
-    if (elem === document.body) {
-        return
-    }
-    for (const child of elem.parentElement.children) {
-        if (child !== elem) {
-            _hideElement(child)
-        }
-    }
-    hideOtherElement(elem.parentElement)
-}
 
-async function onCreatePopupWindow() {
-    // bilibili_live 的修复实例里有相关的变量修改
-    console.log('popup window is created')
-
-    isPopup = true
-    popupToolBar.showRestoreBtn()
-    popupToolBar.hidePopupBtn()
-
-    currentContainer.scrollIntoView({
-        behavior: "instant",
-        block: "start",
-        inline: "start"
-    });
-
-    popupToolBar.display(currentVideoElement)
-}
-
-
-
-function afterDestoryPopupWindow() {
-    isPopup = false
-    console.log('popup window is destory')
-    const el = document.querySelector('#popup-tool-style')
-    el && el.remove()
-    popupToolBar.showPopupBtn()
-    popupToolBar.hideRestoreBtn()
-}
 
 function callbackForFixup(obj) {
     // 根据obj修改变量
@@ -744,10 +738,6 @@ function callbackForFixup(obj) {
 }
 
 
-
-function makeVideoContainerFixed() {
-    setStyleArrtibute(currentContainer, 'position: fixed !important; width: 100% !important; height: 100% !important; padding: 0px !important; margin: 0px !important;')
-}
 
 /**
  * 查找可能的、相邻的 video 元素. 首先从target开始往祖先元素查找, 若找到元素的 id 或 className 包含 player 字符的元素则将它视为video容器元素, 再从这个容器元素里寻找符合条件的 video 元素
@@ -949,7 +939,7 @@ class SelectableLayer {
             main({
                 target: this.map.get(event.target)
             })
-            popupToolBar.toolbar.querySelector('#x-popup').click()
+            popupToolBar.doPopup();
             this.remove()
         }
     }
@@ -972,8 +962,7 @@ browser.runtime.onMessage.addListener(message => {
             main({
                 target: document.querySelector(rule.selector)
             })
-            // 模拟点击"弹窗"
-            popupToolBar.toolbar.querySelector('#x-popup').click()
+            popupToolBar.doPopup()
         }
     }
 })
@@ -982,12 +971,9 @@ window.addEventListener('resize', event => {
     if (isPopup) {
         event.preventDefault()
         event.stopPropagation()
-
     }
-}, {
-        capture: true,
-        passive: false
-    })
+}, { capture: true, passive: false }
+)
 
 document.addEventListener('mouseover', main, {
     capture: true,
@@ -1016,7 +1002,27 @@ document.addEventListener('mousemove', event => {
     timeoutId = setTimeout(() => {
         popupToolBar.remove()
     }, timeToRemove)
-}, {
-        capture: true,
-        passive: true
-    })
+}, { capture: true, passive: true }
+)
+
+
+function onFullscreenchange() {
+    if (!isPopup) return;
+    if (document.fullscreenElement) {
+        // enter fullscreen
+        popupToolBar.hidePopupBtn();
+        popupToolBar.hideRestoreBtn();
+    }
+    else {
+        // exit fullscreen
+        popupToolBar.hidePopupBtn();
+        popupToolBar.showRestoreBtn();
+        // popupToolBar.fixupInstance.afterCreate(currentContainer, currentVideoElement, callbackForFixup)
+    }
+}
+
+document.addEventListener('mozfullscreenchange', () => {
+    onFullscreenchange();
+}, { capture: false, passive: true })
+
+
