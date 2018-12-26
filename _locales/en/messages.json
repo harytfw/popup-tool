@@ -15,10 +15,10 @@
         "message": "Remember Location & Size"
     },
     "browserAction_enable": {
-        "message": "This page has a video that pops up automatically"
+        "message": "Auto Popup"
     },
     "browserAction_disable": {
-        "message": "There are no matching rules to automatically pop up the video, click to select the video."
+        "message": "Popup Manually"
     },
     "windowPosition": {
         "message": "Window Position"

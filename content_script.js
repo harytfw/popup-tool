@@ -4,7 +4,6 @@ let videoHeight = -1
 let videoWidth = -1
 let isPopup = false
 
-
 const MIN_VALID_WIDTH = 100
 const MIN_VALID_HEIGHT = 100
 
@@ -789,13 +788,11 @@ function searchVideoElement(target, findContainer = true) {
 
         const style = window.getComputedStyle(video)
         if (style['display'] === 'none') {
-            targetVideo = null
             continue
         }
 
         const rect = video.getBoundingClientRect()
         if (rect.width < MIN_VALID_WIDTH && rect.height < MIN_VALID_HEIGHT) {
-            targetVideo = null
             continue
         }
 
@@ -986,12 +983,15 @@ let currentEventCount = 0
 const timeToRemove = 2000
 const MAX_EVENT_COUNT = 30 // 限制 mousemove 的触发频率
 document.addEventListener('mousemove', event => {
+    if(document.fullscreenElement){
+        popupToolBar.remove();
+        return;
+    }
     if (currentEventCount < MAX_EVENT_COUNT) {
         currentEventCount += 1
         return
-    } else {
-        currentEventCount = 0
     }
+    currentEventCount = 0
     if (!isPopup) {
         main(event)
         return
@@ -1004,25 +1004,4 @@ document.addEventListener('mousemove', event => {
     }, timeToRemove)
 }, { capture: true, passive: true }
 )
-
-
-function onFullscreenchange() {
-    if (!isPopup) return;
-    if (document.fullscreenElement) {
-        // enter fullscreen
-        popupToolBar.hidePopupBtn();
-        popupToolBar.hideRestoreBtn();
-    }
-    else {
-        // exit fullscreen
-        popupToolBar.hidePopupBtn();
-        popupToolBar.showRestoreBtn();
-        // popupToolBar.fixupInstance.afterCreate(currentContainer, currentVideoElement, callbackForFixup)
-    }
-}
-
-document.addEventListener('mozfullscreenchange', () => {
-    onFullscreenchange();
-}, { capture: false, passive: true })
-
 

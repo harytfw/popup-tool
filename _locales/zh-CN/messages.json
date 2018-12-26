@@ -15,10 +15,10 @@
         "message": "记住位置&大小"
     },
     "browserAction_enable": {
-        "message": "此页面有视频可以自动弹出"
+        "message": "自动弹出"
     },
     "browserAction_disable": {
-        "message": "没有匹配的规则用来自动弹出视频, 点击选择视频"
+        "message": "手动弹出"
     },
     "windowPosition": {
         "message": "窗口位置"
