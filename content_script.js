@@ -183,9 +183,9 @@ class Fixup {
         el && el.remove()
     }
     setFullWindow(arg, includeParent = false) {
-        console.log(arg)
+        // console.log(arg)
         let zIndex = 999999;
-        const style = `display:initial;width:100%;height:100%;position:fixed;top:0px;left:0px;z-index:${zIndex};visibility: visible;background-color:black`
+        const style = `display:initial;width:100% !important;height:100% !important;position:fixed !important;top:0px !important;left:0px !important;z-index:${zIndex};visibility: visible;background-color:black`
         if (typeof arg === 'string') {
             const el = document.querySelector(arg)
             arg = el
@@ -983,7 +983,7 @@ let currentEventCount = 0
 const timeToRemove = 2000
 const MAX_EVENT_COUNT = 30 // 限制 mousemove 的触发频率
 document.addEventListener('mousemove', event => {
-    if(document.fullscreenElement){
+    if (document.fullscreenElement) {
         popupToolBar.remove();
         return;
     }

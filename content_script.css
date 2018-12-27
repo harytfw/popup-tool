@@ -9,7 +9,7 @@
     font-size: 16px;
     z-index: 1000001 !important;
     visibility: visible !important;
-    font-size: 16px
+    font-size: 10px
 }
 
 #popup-tool * {
@@ -24,7 +24,7 @@
     width: auto;
     /* bootstrap 4.1 Buttons*/
     font-weight: 400;
-    font-size: 1rem;
+    font-size: 1em;
     text-align: center;
     white-space: nowrap;
     vertical-align: middle;
@@ -37,9 +37,9 @@
     border-right-color: transparent;
     border-bottom-color: transparent;
     border-left-color: transparent;
-    padding: .375rem .75rem;
+    padding: .375em .75em;
     line-height: 1.5;
-    border-radius: .25rem;
+    border-radius: .25em;
     transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
     color: #fff;
     background-color: #007bff;
