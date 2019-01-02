@@ -139,7 +139,9 @@ class Toolbar {
     async doRestore() {
         this.fixupInstance && this.fixupInstance.beforeDestory(currentContainer, currentVideoElement, callbackForFixup)
 		// 恢复前去除置顶
-		await this.unsetOnTop()
+        await this.unsetOnTop()
+        this.hideEl(this.toolbar.querySelector('#x-setontop').parentElement)
+        
         await browser.runtime.sendMessage({
             command: 'destory',
         })
@@ -570,7 +572,7 @@ const extensionRule = {
         },
         {
             name: 'douyu',
-            selector: '#js-room-video',
+            selector: '#js-player-video',
             test: function () {
                 return /https?:\/\/www\.douyu\.com\/\d+/.test(location.href)
             },
