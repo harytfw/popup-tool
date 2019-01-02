@@ -6,11 +6,13 @@ function saveSetting() {
     }
     // 修复 checkbox的值不被传递的问题
     // data['fixhistory'] = document.querySelector('#fixHistory').checked
+	data['ontop'] = document.querySelector('#ontop').checked
     browser.storage.local.set(data)
 }
 
 browser.storage.local.get().then(storage => {
     // document.querySelector(`[name='fixhistory']`).checked = storage.fixhistory
+	document.querySelector(`[name='ontop']`).checked = storage.ontop
     document.querySelector(`[name='position'][value='${storage.position}'`).checked = true
     document.querySelector(`[name='size'][value='${storage.size}'`).checked = true
 })

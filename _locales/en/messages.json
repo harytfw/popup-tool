@@ -14,6 +14,12 @@
     "toolBar_remember": {
         "message": "Remember Location & Size"
     },
+	"toolBar_setontop": {
+        "message": "Set Top Most"
+    },
+	"toolBar_unsetontop": {
+        "message": "Unset Top Most"
+    },
     "browserAction_enable": {
         "message": "Auto Popup"
     },
@@ -37,5 +43,8 @@
     },
     "windowSize_last": {
         "message": "Use last size"
-    }
+    },
+	"ontop":{
+		"message":"Auto set on top most"
+	}
 }

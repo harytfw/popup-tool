@@ -7,6 +7,10 @@ let isPopup = false
 const MIN_VALID_WIDTH = 100
 const MIN_VALID_HEIGHT = 100
 
+let config = null
+browser.storage.local.get().then(cfg=>{
+	config = cfg
+})
 class Toolbar {
     constructor() {
 
@@ -17,6 +21,8 @@ class Toolbar {
         <div ><button id='x-popup' type='button'>${browser.i18n.getMessage('toolbar_popup')}</button></div>
         <div style='display:none;'><button id='x-restore' type='button'>${browser.i18n.getMessage('toolbar_restore')}</button></div>
         <div style='display:none;'><button id='x-remember-location' type='button'>${browser.i18n.getMessage('toolbar_remember')}</button></div>
+		<div style='display:none;'><button id='x-setontop' type='button'>${browser.i18n.getMessage('toolbar_setontop')}</button></div>
+		<div style='display:none;'><button id='x-unsetontop' type='button'>${browser.i18n.getMessage('toolbar_unsetontop')}</button></div>
     `
         const doc = (new DOMParser).parseFromString(html, "text/html");
         while (doc.body.firstElementChild instanceof HTMLElement) {
@@ -79,14 +85,26 @@ class Toolbar {
         const target = event.target
         // hideOtherElement(currentVideoElement)
         this.fixupInstance = extensionRule.getRule().fixup
-        if (target.id === 'x-popup') {
-            this.doPopup();
-        } else if (target.id === 'x-restore') {
-            this.doRestore();
-        }
-        else if (target.id === 'x-remember-location') {
-            this.doRemember();
-        }
+		switch(target.id){
+			case  'x-popup':
+				this.doPopup()
+				break
+			case 'x-restore':
+				this.doRestore()
+				break
+			case 'x-remember-location':
+				this.doRemember()
+				break
+			case 'x-setontop':
+				this.setOnTop()
+				break
+			case 'x-unsetontop':
+				this.unsetOnTop()
+				break
+			default:
+				break
+		}
+		
     }
 
     async doPopup() {
@@ -109,11 +127,19 @@ class Toolbar {
         //     inline: "start"
         // });
         popupToolBar.display(currentVideoElement)
+		if(config.ontop&&config.ontop===true){
+			this.setOnTop()
+		}
+		else{
+			this.unsetOnTop();
+		}
         this.fixupInstance && this.fixupInstance.afterCreate(currentContainer, currentVideoElement, callbackForFixup)
     }
 
     async doRestore() {
         this.fixupInstance && this.fixupInstance.beforeDestory(currentContainer, currentVideoElement, callbackForFixup)
+		// 恢复前去除置顶
+		await this.unsetOnTop()
         await browser.runtime.sendMessage({
             command: 'destory',
         })
@@ -124,7 +150,6 @@ class Toolbar {
         el && el.remove()
         this.showPopupBtn()
         this.hideRestoreBtn()
-
         this.fixupInstance && this.fixupInstance.afterDestory(currentContainer, currentVideoElement, callbackForFixup)
     }
     async doRemember() {
@@ -132,6 +157,22 @@ class Toolbar {
             command: 'rememberLocation'
         })
     }
+	
+	async setOnTop(){
+		this.showEl(this.toolbar.querySelector('#x-unsetontop').parentElement)
+		this.hideEl(this.toolbar.querySelector('#x-setontop').parentElement)
+		return browser.runtime.sendMessage({
+            command: 'setOnTop',
+        })
+	}
+
+	async unsetOnTop(){
+		this.showEl(this.toolbar.querySelector('#x-setontop').parentElement)
+		this.hideEl(this.toolbar.querySelector('#x-unsetontop').parentElement)
+		return browser.runtime.sendMessage({
+            command: 'unsetOnTop',
+        })
+	}
 }
 
 const popupToolBar = new Toolbar()

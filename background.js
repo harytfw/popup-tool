@@ -182,6 +182,18 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
 			lastHeight: win.height,
 			lastWidth: win.width
 		})
+	} else if(message.command === 'setOnTop'){
+		try{
+			browser.runtime.sendNativeMessage('popuptool.helper','on')
+		}catch(e){
+			// console.error(e)
+		}
+	} else if(message.command === 'unsetOnTop'){
+		try{
+			browser.runtime.sendNativeMessage('popuptool.helper','off')
+		}catch(e){
+			// console.error(e)
+		}
 	}
 })
 
@@ -224,6 +236,7 @@ browser.runtime.onInstalled.addListener(detail => {
 		browser.storage.local.set({
 			size: 'auto',
 			position: 'center',
+			ontop:false,
 			lastLeft: 0,
 			lastTop: 0,
 			lastHeight: 480,

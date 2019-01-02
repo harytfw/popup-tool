@@ -1,0 +1,7 @@
+{
+  "name": "popuptool.helper",
+  "description": "Native Message Example",
+  "path": "popuptool.helper.exe",
+  "type": "stdio",
+  "allowed_extensions": [ "popup-tool@harytfw"]
+}
