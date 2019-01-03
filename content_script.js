@@ -8,8 +8,8 @@ const MIN_VALID_WIDTH = 100
 const MIN_VALID_HEIGHT = 100
 
 let config = null
-browser.storage.local.get().then(cfg=>{
-	config = cfg
+browser.storage.local.get().then(cfg => {
+    config = cfg
 })
 class Toolbar {
     constructor() {
@@ -85,26 +85,26 @@ class Toolbar {
         const target = event.target
         // hideOtherElement(currentVideoElement)
         this.fixupInstance = extensionRule.getRule().fixup
-		switch(target.id){
-			case  'x-popup':
-				this.doPopup()
-				break
-			case 'x-restore':
-				this.doRestore()
-				break
-			case 'x-remember-location':
-				this.doRemember()
-				break
-			case 'x-setontop':
-				this.setOnTop()
-				break
-			case 'x-unsetontop':
-				this.unsetOnTop()
-				break
-			default:
-				break
-		}
-		
+        switch (target.id) {
+            case 'x-popup':
+                this.doPopup()
+                break
+            case 'x-restore':
+                this.doRestore()
+                break
+            case 'x-remember-location':
+                this.doRemember()
+                break
+            case 'x-setontop':
+                this.setOnTop()
+                break
+            case 'x-unsetontop':
+                this.unsetOnTop()
+                break
+            default:
+                break
+        }
+
     }
 
     async doPopup() {
@@ -127,21 +127,21 @@ class Toolbar {
         //     inline: "start"
         // });
         popupToolBar.display(currentVideoElement)
-		if(config.ontop&&config.ontop===true){
-			this.setOnTop()
-		}
-		else{
-			this.unsetOnTop();
-		}
+        if (config.ontop && config.ontop === true) {
+            this.setOnTop()
+        }
+        else {
+            this.unsetOnTop();
+        }
         this.fixupInstance && this.fixupInstance.afterCreate(currentContainer, currentVideoElement, callbackForFixup)
     }
 
     async doRestore() {
         this.fixupInstance && this.fixupInstance.beforeDestory(currentContainer, currentVideoElement, callbackForFixup)
-		// 恢复前去除置顶
+        // 恢复前去除置顶
         await this.unsetOnTop()
         this.hideEl(this.toolbar.querySelector('#x-setontop').parentElement)
-        
+
         await browser.runtime.sendMessage({
             command: 'destory',
         })
@@ -159,22 +159,22 @@ class Toolbar {
             command: 'rememberLocation'
         })
     }
-	
-	async setOnTop(){
-		this.showEl(this.toolbar.querySelector('#x-unsetontop').parentElement)
-		this.hideEl(this.toolbar.querySelector('#x-setontop').parentElement)
-		return browser.runtime.sendMessage({
+
+    async setOnTop() {
+        this.showEl(this.toolbar.querySelector('#x-unsetontop').parentElement)
+        this.hideEl(this.toolbar.querySelector('#x-setontop').parentElement)
+        return browser.runtime.sendMessage({
             command: 'setOnTop',
         })
-	}
+    }
 
-	async unsetOnTop(){
-		this.showEl(this.toolbar.querySelector('#x-setontop').parentElement)
-		this.hideEl(this.toolbar.querySelector('#x-unsetontop').parentElement)
-		return browser.runtime.sendMessage({
+    async unsetOnTop() {
+        this.showEl(this.toolbar.querySelector('#x-setontop').parentElement)
+        this.hideEl(this.toolbar.querySelector('#x-unsetontop').parentElement)
+        return browser.runtime.sendMessage({
             command: 'unsetOnTop',
         })
-	}
+    }
 }
 
 const popupToolBar = new Toolbar()
@@ -495,7 +495,7 @@ const extensionRule = {
         {
             name: 'iqiyi',
             test: /https?:\/\/www\.iqiyi\.com\/v_.*/,
-            selector: '.pw-video',
+            selector: '.iqp-player',
             fixup: new class extends Fixup {
                 constructor() {
                     super()
@@ -581,13 +581,31 @@ const extensionRule = {
                     super()
                 }
                 beforeCreate(_, __, callback) {
+                    this.removeScrollbar()
                     this.triggerClick('[title="网页全屏"]')
-                    callback({
-                        currentContainer: document.querySelector('.PlayerCase')
-                    })
+                    // callback({
+                    //     currentContainer: document.querySelector('.PlayerCase')
+                    // })
                 }
                 afterDestory() {
+                    this.restoreScrollbar()
                     this.triggerClick('[title="退出网页全屏"]')
+                }
+            }
+        },
+        {
+            name:'Acfun',
+            selector:'#ACFlashPlayer',
+            test:/https?:\/\/www\.acfun\.cn\/v\/ac\d+/,
+            fixup:new class extends Fixup{
+                constructor(){
+                    super()
+                }
+                afterCreate(){
+                    this.triggerClick('#webfull-checkbox')
+                }
+                afterDestory(){
+                    this.triggerClick('#webfull-checkbox')
                 }
             }
         },
@@ -675,16 +693,22 @@ const extensionRule = {
                     f = true
                 }
                 if (f) {
-                    this.cacheObj = obj
                     const c = obj.selector ? document.querySelector(obj.selector) : null
-                    this.cacheObj.fixup.matched(c, null, callbackForFixup)
-                    this.cacheObj.goodElementMapping = new WeakMap() //存放匹配成功的元素， 事件触发的element -> 自己或用selector获取的元素
-                    console.info(`'${this.cacheObj.name}' policy is picked`)
-                    if (obj.name !== 'DEFAULT') {
+
+                    if (c && obj.name !== 'DEFAULT') {
                         browser.runtime.sendMessage({
                             command: 'availablePopup'
                         })
+                        this.cacheObj = obj
+                        console.info(`'${this.cacheObj.name}' policy is picked`)
                     }
+                    else if (!c) {
+                        this.cacheObj = this.rules.filter(o => o.name === 'DEFAULT')[0]
+                        console.assert(this.cacheObj.name === 'DEFAULT', 'fallback rule is not right')
+                        console.info(`'${this.cacheObj.name}' policy is picked instead of '${obj.name}'`)
+                    }
+                    this.cacheObj.fixup.matched(c, null, callbackForFixup)
+                    this.cacheObj.goodElementMapping = new WeakMap() //存放匹配成功的元素， 事件触发的element -> 自己或用selector获取的元素
                     break
                 }
             }
@@ -701,16 +725,15 @@ const extensionRule = {
             if (this.cacheObj.tagName.includes(lowerCaseName)) {
                 return {
                     customRule: false,
-                    success: true,
+                    element: target
                 }
             }
             return {
                 customRule: false,
-                success: false,
+                element: null,
             }
         }
 
-        let success = false
         if (!this.cacheObj.tagName && !this.cacheObj.selector) {
             console.log(this.cacheObj)
             console.error('tagName or selector must be provided')
@@ -718,11 +741,9 @@ const extensionRule = {
         }
         if (this.cacheObj.goodElementMapping.has(target)) {
             // console.log(target, 'match cache', this.cacheObj.goodElementMapping.get(target))
-            success = true
         } else if (this.cacheObj.tagName && this.cacheObj.tagName.includes(lowerCaseName)) {
             // console.log(target, 'match tag name', this.cacheObj.tagName)
             this.cacheObj.goodElementMapping.set(target, target) //映射自己
-            success = true
         } else if (this.cacheObj.selector) {
             const _target = target
             const element = document.querySelector(this.cacheObj.selector)
@@ -732,7 +753,6 @@ const extensionRule = {
                     if (target === element) {
                         this.cacheObj.goodElementMapping.set(_target, element) // 映射到由selector获得的元素
                         // console.log(target, 'match selector', this.cacheObj.selector)
-                        success = true
                         break
                     }
                     target = target.parentElement
@@ -741,8 +761,7 @@ const extensionRule = {
         }
         return {
             customRule: true,
-            success,
-            element: this.cacheObj.goodElementMapping.get(target) || document.querySelector(this.cacheObj.selector)
+            element: this.cacheObj.goodElementMapping.get(target)
         }
     }
 }
@@ -856,10 +875,9 @@ function main(event) {
     const res = extensionRule.match(event.target)
 
     // res.customRule 自定义匹配的规则是否存在，不存在的话使用默认规则进行检查，
-    // res.success 匹配是否成功
     // res.element 返回由规则指定的容器
 
-    if (res.customRule && res.success) {
+    if (res.customRule && res.element) {
 
         // 使用自定义规则且匹配成功
         currentContainer = res.element
@@ -871,7 +889,8 @@ function main(event) {
             popupToolBar.display(currentContainer)
             return
         }
-    } else if (!res.customRule && res.success) {
+    }
+    else if (!res.customRule && res.element) {
         // 使用了默认规则并且匹配成功
         if (event.target.tagName === 'OBJECT' || event.target.tagName === 'EMBED') {
             // flash 播放器
@@ -888,7 +907,7 @@ function main(event) {
             popupToolBar.display(currentContainer)
         }
         // console.log(2, currentContainer, currentVideoElement)
-    } else if (!res.success) {
+    } else {
 
         // 检测是否在popupToolBar触发，popupToolBar只有4层元素
         let p = event.target
