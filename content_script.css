@@ -6,10 +6,11 @@
     color: red;
     background-color: transparent;
     width: auto;
-    font-size: 16px;
-    z-index: 1000001 !important;
+    z-index: 2147483640 !important;
     visibility: visible !important;
-    font-size: 10px
+    font-size: 10px;
+    -moz-user-select: none;
+    
 }
 
 #popup-tool * {

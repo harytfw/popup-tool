@@ -46,8 +46,8 @@ async function createPopupWindow(options = {
 		state: 'normal',
 		tabId: options.tab.id,
 		titlePreface: options.tab.title,
-		height: Math.round(options.height) /*+ OSWindowBorderTop + OSWindowBorderBottom*/ ,
-		width: Math.round(options.width) /*+ OSWindowBorderLeft + OSWindowBorderRight*/ ,
+		height: Math.round(options.height) /*+ OSWindowBorderTop + OSWindowBorderBottom*/,
+		width: Math.round(options.width) /*+ OSWindowBorderLeft + OSWindowBorderRight*/,
 	}
 	const storage = await browser.storage.local.get()
 
@@ -141,6 +141,11 @@ async function updatePopupWindow(options = {
 // 	// this.createPopupWindow()
 // })
 
+
+var nativePort = browser.runtime.connectNative(
+	"popuptool.helper"
+)
+
 browser.runtime.onMessage.addListener(async (message, sender) => {
 	if (message.command === 'create') {
 		await createPopupWindow({
@@ -182,17 +187,23 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
 			lastHeight: win.height,
 			lastWidth: win.width
 		})
-	} else if(message.command === 'setOnTop'){
-		try{
-			browser.runtime.sendNativeMessage('popuptool.helper','on')
-		}catch(e){
+	} else if (message.command === 'setOnTop') {
+		try {
+			nativePort.postMessage('on')
+		} catch (e) {
 			// console.error(e)
 		}
-	} else if(message.command === 'unsetOnTop'){
-		try{
-			browser.runtime.sendNativeMessage('popuptool.helper','off')
-		}catch(e){
+	} else if (message.command === 'unsetOnTop') {
+		try {
+			nativePort.postMessage('off')
+		} catch (e) {
 			// console.error(e)
+		}
+	} else if (message.command === 'changeOpacity') {
+		try {
+			nativePort.postMessage('opacity:' + message.value)
+		} catch (e) {
+			console.error(e)
 		}
 	}
 })
@@ -236,7 +247,7 @@ browser.runtime.onInstalled.addListener(detail => {
 		browser.storage.local.set({
 			size: 'auto',
 			position: 'center',
-			ontop:false,
+			ontop: false,
 			lastLeft: 0,
 			lastTop: 0,
 			lastHeight: 480,

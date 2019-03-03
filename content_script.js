@@ -23,6 +23,7 @@ class Toolbar {
         <div style='display:none;'><button id='x-remember-location' type='button'>${browser.i18n.getMessage('toolbar_remember')}</button></div>
 		<div style='display:none;'><button id='x-setontop' type='button'>${browser.i18n.getMessage('toolbar_setontop')}</button></div>
         <div style='display:none;'><button id='x-unsetontop' type='button'>${browser.i18n.getMessage('toolbar_unsetontop')}</button></div>
+        <div style='display:none;'><input id='x-opacity-range' min='60' max='255' value='255' type='range'></div>
     `
         const doc = (new DOMParser).parseFromString(html, "text/html");
         while (doc.body.firstElementChild instanceof HTMLElement) {
@@ -32,6 +33,13 @@ class Toolbar {
         for (const btn of this.toolbar.querySelectorAll('button')) {
             btn.addEventListener('click', this.onClick.bind(this))
         }
+
+        const rangeInput = this.toolbar.querySelector('input')
+
+        rangeInput.addEventListener('input', (event) => {
+            rangeInput.title = rangeInput.value
+            this.changeOpacity(rangeInput.value)
+        })
 
         this.fixupInstance = null
     }
@@ -66,16 +74,19 @@ class Toolbar {
     showRestoreBtn() {
         this.showEl(this.toolbar.querySelector('#x-restore').parentElement)
         this.showEl(this.toolbar.querySelector('#x-remember-location').parentElement)
+        this.showEl(this.toolbar.querySelector('#x-opacity-range').parentElement)
     }
     hideRestoreBtn() {
         this.hideEl(this.toolbar.querySelector('#x-restore').parentElement)
         this.hideEl(this.toolbar.querySelector('#x-remember-location').parentElement)
-      }
+        this.hideEl(this.toolbar.querySelector('#x-opacity-range').parentElement)
+    }
     remove() {
         this.toolbar.remove()
     }
     mount() {
-        document.body.appendChild(this.toolbar)
+        if (this.toolbar.parentElement == null)
+            document.body.appendChild(this.toolbar)
     }
     get parentElement() {
         return this.toolbar.parentElement
@@ -139,8 +150,8 @@ class Toolbar {
     async doRestore() {
         this.fixupInstance && this.fixupInstance.beforeDestory(currentContainer, currentVideoElement, callbackForFixup)
         // 恢复前去除置顶
-        await this.unsetOnTop()
-
+        await this.unsetOnTop(true)
+        await this.changeOpacity(255)
         await browser.runtime.sendMessage({
             command: 'destory',
         })
@@ -167,11 +178,22 @@ class Toolbar {
         })
     }
 
-    async unsetOnTop() {
-        this.showEl(this.toolbar.querySelector('#x-setontop').parentElement)
+    async unsetOnTop(hideBoth = false) {
+        if (hideBoth) {
+            this.hideEl(this.toolbar.querySelector('#x-setontop').parentElement)
+        }
+        else {
+            this.showEl(this.toolbar.querySelector('#x-setontop').parentElement)
+        }
         this.hideEl(this.toolbar.querySelector('#x-unsetontop').parentElement)
         return browser.runtime.sendMessage({
             command: 'unsetOnTop',
+        })
+    }
+    async changeOpacity(value) {
+        await browser.runtime.sendMessage({
+            command: 'changeOpacity',
+            value,
         })
     }
 }
@@ -909,13 +931,8 @@ function main(event) {
         // console.log(2, currentContainer, currentVideoElement)
     } else {
 
-        // 检测是否在popupToolBar触发，popupToolBar只有4层元素
-        let p = event.target
-        let q = popupToolBar.toolbar
-        if (p === q || (p.parentElement && p.parentElement === q) || (p.parentElement && p.parentElement.parentElement && p.parentElement.parentElement === q) || (p.parentElement && p.parentElement.parentElement && p.parentElement.parentElement.parentElement && p.parentElement.parentElement.parentElement === q)) {
-            //不处理事件
-            return
-        }
+        // 检测是否在popupToolBar触发
+        if (event.target.closest("#popup-tool")) return
 
         // 鼠标移动到其他地方，移除 toolbar
         popupToolBar.remove()
@@ -1044,10 +1061,18 @@ let timeoutId = 0
 let currentEventCount = 0
 const timeToRemove = 2000
 const MAX_EVENT_COUNT = 30 // 限制 mousemove 的触发频率
+function tryRemoveToolbar() {
+    // 如果正在使用工具栏，延迟到下一次
+    if (document.activeElement.closest("#popup-tool")) {
+        setTimeout(tryRemoveToolbar, timeToRemove)
+        return
+    }
+    popupToolBar.remove()
+}
 document.addEventListener('mousemove', event => {
     if (document.fullscreenElement) {
-        popupToolBar.remove();
-        return;
+        popupToolBar.remove()
+        return
     }
     if (currentEventCount < MAX_EVENT_COUNT) {
         currentEventCount += 1
@@ -1058,12 +1083,11 @@ document.addEventListener('mousemove', event => {
         main(event)
         return
     }
-    // 鼠标在指定时间内没有移动的话，自动隐藏 toolbar
-    popupToolBar.display(currentVideoElement)
-    window.clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => {
-        popupToolBar.remove()
-    }, timeToRemove)
+    if (event.y <= 100) {
+        popupToolBar.display(document.body)
+        return
+    }
+    popupToolBar.remove()
 }, { capture: true, passive: true }
 )
 
