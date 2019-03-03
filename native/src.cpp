@@ -1,5 +1,6 @@
 #include <iostream>
 #include <windows.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 char rbuf[BUFSIZ] = { 0 };
