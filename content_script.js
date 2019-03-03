@@ -22,16 +22,16 @@ class Toolbar {
         <div style='display:none;'><button id='x-restore' type='button'>${browser.i18n.getMessage('toolbar_restore')}</button></div>
         <div style='display:none;'><button id='x-remember-location' type='button'>${browser.i18n.getMessage('toolbar_remember')}</button></div>
 		<div style='display:none;'><button id='x-setontop' type='button'>${browser.i18n.getMessage('toolbar_setontop')}</button></div>
-		<div style='display:none;'><button id='x-unsetontop' type='button'>${browser.i18n.getMessage('toolbar_unsetontop')}</button></div>
+        <div style='display:none;'><button id='x-unsetontop' type='button'>${browser.i18n.getMessage('toolbar_unsetontop')}</button></div>
     `
         const doc = (new DOMParser).parseFromString(html, "text/html");
         while (doc.body.firstElementChild instanceof HTMLElement) {
             this.toolbar.appendChild(doc.body.firstElementChild);
         }
 
-        this.toolbar.querySelectorAll('div').forEach(node => {
-            node.addEventListener('click', this.onClick.bind(this))
-        })
+        for (const btn of this.toolbar.querySelectorAll('button')) {
+            btn.addEventListener('click', this.onClick.bind(this))
+        }
 
         this.fixupInstance = null
     }
@@ -70,7 +70,7 @@ class Toolbar {
     hideRestoreBtn() {
         this.hideEl(this.toolbar.querySelector('#x-restore').parentElement)
         this.hideEl(this.toolbar.querySelector('#x-remember-location').parentElement)
-    }
+      }
     remove() {
         this.toolbar.remove()
     }
@@ -140,7 +140,6 @@ class Toolbar {
         this.fixupInstance && this.fixupInstance.beforeDestory(currentContainer, currentVideoElement, callbackForFixup)
         // 恢复前去除置顶
         await this.unsetOnTop()
-        this.hideEl(this.toolbar.querySelector('#x-setontop').parentElement)
 
         await browser.runtime.sendMessage({
             command: 'destory',
@@ -594,68 +593,69 @@ const extensionRule = {
             }
         },
         {
-            name:'Acfun',
-            selector:'#ACFlashPlayer',
-            test:/https?:\/\/www\.acfun\.cn\/v\/ac\d+/,
-            fixup:new class extends Fixup{
-                constructor(){
+            name: 'Acfun',
+            selector: '#ACFlashPlayer',
+            test: /https?:\/\/www\.acfun\.cn\/v\/ac\d+/,
+            fixup: new class extends Fixup {
+                constructor() {
                     super()
                 }
-                afterCreate(){
-                    this.triggerClick('#webfull-checkbox')
+                afterCreate() {
+                    this.triggerClick('.fullscreen-web .btn-span')
                 }
-                afterDestory(){
-                    this.triggerClick('#webfull-checkbox')
+                afterDestory() {
+                    this.triggerClick('.fullscreen-web .btn-span')
                 }
             }
         },
         {
-            name: 'jandan',
-            test: function () {
-                return false
-                // /https?:\/\/jandan\.net\/pic.*/
-            },
-            selector: '#comments',
+            name: 'huya',
+            test: /https?:\/\/www\.huya\.com\/[\d\w]+/,
+            selector: '#player-wrap',
             fixup: new class extends Fixup {
-                constructor() {
-                    super()
+                constructor() { super() }
+                afterCreate() {
+                    this.removeScrollbar()
+                    this.triggerClick('#player-fullpage-btn')
                 }
-                afterCreate(container) {
-                    // this.setFullWindow(container)
-                }
-                afterDestory(container) {
-                    // this.setFullWindow(container)
+                afterDestory() {
+                    this.restoreScrollbar()
+                    this.triggerClick('#player-fullpage-btn')
                 }
             }
         },
-        /*{
-            name: 'Kancollection',
-            test: /https?:\/\/www\.dmm\.com\/netgame\/social\/-\/gadgets\/=\/app_id=854854\//,
-            selector: '#game_frame',
+        {
+            name: 'panda',
+            test: /https?:\/\/www\.panda\.tv\/\d+/,
+            selector: '.room-player-box',
             fixup: new class extends Fixup {
-                constructor() {
-                    super()
-                }
-                matched(container, video, cb) {
-                    cb({
-                        currentVideoElement: container
-                    })
-                }
-                beforeCreate(container, video, cb) {
-                    cb({
-                        currentVideoElement: container
-                    })
-                }
-                afterCreate(container) {
+                constructor() { super() }
+                afterCreate() {
                     this.removeScrollbar()
-                    this.setFullWindow(container, true)
+                    this.triggerClick('.h5player-control-bar-fullscreen')
                 }
-                afterDestory(container) {
-                    this.unsetFullWindow(container, true)
+                afterDestory() {
                     this.restoreScrollbar()
+                    this.triggerClick('.h5player-control-bar-fullscreen')
                 }
             }
-        },*/
+        },
+        {
+            name: 'huomao',
+            test: /https?:\/\/www\.huomao\.com\/\d+/,
+            selector: '#playing-box-root',
+            fixup: new class extends Fixup {
+                constructor() { super() }
+                afterCreate() {
+                    this.removeScrollbar()
+                    this.triggerClick('.page-full-screen')
+                }
+                afterDestory() {
+                    this.restoreScrollbar()
+                    this.triggerClick('.page-full-screen')
+                }
+            }
+        },
         {
             name: 'DEFAULT',
             test: /./,
