@@ -40,7 +40,7 @@ class Toolbar {
         const rangeInput = this.toolbar.querySelector('input')
 
         rangeInput.addEventListener('input', (event) => {
-            rangeInput.title = rangeInput.value
+            rangeInput.title = browser.i18n.getMessage('opacity', rangeInput.value)
             this.opacity = rangeInput.value
         })
 

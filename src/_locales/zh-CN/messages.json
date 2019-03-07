@@ -11,10 +11,10 @@
     "toolBar_restore": {
         "message": "恢复"
     },
-	"toolBar_setontop": {
+    "toolBar_setontop": {
         "message": "置顶"
     },
-	"toolBar_unsetontop": {
+    "toolBar_unsetontop": {
         "message": "不置顶"
     },
     "toolBar_remember": {
@@ -44,7 +44,16 @@
     "windowSize_last": {
         "message": "使用上次窗口的大小"
     },
-	"ontop":{
-		"message":"自动置顶"
-	}
+    "ontop": {
+        "message": "自动置顶"
+    },
+    "opacity": {
+        "message": "不透明度：$VALUE$",
+        "placeholders": {
+            "value": {
+                "content": "$1",
+                "example": "0"
+            }
+        }
+    }
 }

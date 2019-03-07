@@ -14,10 +14,10 @@
     "toolBar_remember": {
         "message": "Remember Location & Size"
     },
-	"toolBar_setontop": {
+    "toolBar_setontop": {
         "message": "Set Top Most"
     },
-	"toolBar_unsetontop": {
+    "toolBar_unsetontop": {
         "message": "Unset Top Most"
     },
     "browserAction_enable": {
@@ -44,7 +44,16 @@
     "windowSize_last": {
         "message": "Use last size"
     },
-	"ontop":{
-		"message":"Auto set on top most"
-	}
+    "ontop": {
+        "message": "Auto set on top most"
+    },
+    "opacity": {
+        "message": "Opacity: $VALUE$",
+        "placeholders": {
+            "value": {
+                "content": "$1",
+                "example": "0"
+            }
+        }
+    }
 }
