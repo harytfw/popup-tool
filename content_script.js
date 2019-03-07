@@ -683,22 +683,6 @@ const extensionRule = {
             }
         },
         {
-            name: 'panda',
-            test: /https?:\/\/www\.panda\.tv\/\d+/,
-            selector: '.room-player-box',
-            fixup: new class extends Fixup {
-                constructor() { super() }
-                afterCreate() {
-                    this.removeScrollbar()
-                    this.triggerClick('.h5player-control-bar-fullscreen')
-                }
-                afterDestory() {
-                    this.restoreScrollbar()
-                    this.triggerClick('.h5player-control-bar-fullscreen')
-                }
-            }
-        },
-        {
             name: 'huomao',
             test: /https?:\/\/www\.huomao\.com\/\d+/,
             selector: '#playing-box-root',
