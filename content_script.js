@@ -7,15 +7,18 @@ let isPopup = false
 const MIN_VALID_WIDTH = 100
 const MIN_VALID_HEIGHT = 100
 
+/**
+ * 选项
+ */
 let config = null
 browser.storage.local.get().then(cfg => {
     config = cfg
 })
 class Toolbar {
     constructor() {
-
         this.toolbar = document.createElement('div')
         this.toolbar.id = 'popup-tool'
+        this.fixupInstance = null
 
         const html = `
         <div ><button id='x-popup' type='button'>${browser.i18n.getMessage('toolbar_popup')}</button></div>
@@ -38,48 +41,98 @@ class Toolbar {
 
         rangeInput.addEventListener('input', (event) => {
             rangeInput.title = rangeInput.value
-            this.changeOpacity(rangeInput.value)
+            this.opacity = rangeInput.value
         })
 
-        this.fixupInstance = null
     }
     display(locator) {
-        // try {
-        //     if (!locator) throw new Error(locator)
-        // } catch (e) {
-        //     console.error(e)
-        // }
+
         const rect = locator.getBoundingClientRect()
         this.toolbar.style.left = `${rect.left}px`
         this.toolbar.style.top = `${rect.top}px`
         this.toolbar.style.display = ''
         this.mount()
     }
+
+    /**
+     * @param {boolean} isShow
+     */
+    set popupBtn(isShow) {
+        if (isShow)
+            this.showEl(this.toolbar.querySelector('#x-popup').parentElement)
+        else
+            this.hideEl(this.toolbar.querySelector('#x-popup').parentElement)
+    }
+
+    /**
+     * @param {boolean} isShow
+     */
+    set restoreBtn(isShow) {
+        if (!config.supportNative) this.hideEl(this.toolbar.querySelector('#x-opacity-range').parentElement)
+        if (isShow) {
+            this.showEl(this.toolbar.querySelector('#x-restore').parentElement)
+            this.showEl(this.toolbar.querySelector('#x-remember-location').parentElement)
+            if (config.supportNative) this.showEl(this.toolbar.querySelector('#x-opacity-range').parentElement)
+        }
+        else {
+            this.hideEl(this.toolbar.querySelector('#x-restore').parentElement)
+            this.hideEl(this.toolbar.querySelector('#x-remember-location').parentElement)
+            if (config.supportNative) this.hideEl(this.toolbar.querySelector('#x-opacity-range').parentElement)
+        }
+    }
+
+    /**
+     * @param {boolean} flag
+     */
+    set alwaysOnTop(flag) {
+        if (!config.supportNative) {
+            this.hideEl(this.toolbar.querySelector('#x-setontop').parentElement)
+            this.hideEl(this.toolbar.querySelector('#x-unsetontop').parentElement)
+            return
+        }
+        if (flag) {
+            this.showEl(this.toolbar.querySelector('#x-unsetontop').parentElement)
+            this.hideEl(this.toolbar.querySelector('#x-setontop').parentElement)
+            return browser.runtime.sendMessage({
+                command: 'setOnTop',
+            })
+        }
+        else {
+            if (!isPopup)
+                this.hideEl(this.toolbar.querySelector('#x-setontop').parentElement)
+            else
+                this.showEl(this.toolbar.querySelector('#x-setontop').parentElement)
+            this.hideEl(this.toolbar.querySelector('#x-unsetontop').parentElement)
+            return browser.runtime.sendMessage({
+                command: 'unsetOnTop',
+            })
+        }
+    }
+
+    /**
+     * @param {number|string} value
+     */
+    set opacity(value) {
+        if (!config.supportNative) return
+        browser.runtime.sendMessage({
+            command: 'changeOpacity',
+            value: value,
+        })
+    }
+
+    get parentElement() {
+        return this.toolbar.parentElement
+    }
+
     hideEl(el) {
         if (el instanceof HTMLElement) {
             el.style.display = 'none'
         }
     }
-    showEl(el, x, y) {
+    showEl(el) {
         if (el instanceof HTMLElement) {
             el.style.display = 'block'
         }
-    }
-    showPopupBtn() {
-        this.showEl(this.toolbar.querySelector('#x-popup').parentElement)
-    }
-    hidePopupBtn() {
-        this.hideEl(this.toolbar.querySelector('#x-popup').parentElement)
-    }
-    showRestoreBtn() {
-        this.showEl(this.toolbar.querySelector('#x-restore').parentElement)
-        this.showEl(this.toolbar.querySelector('#x-remember-location').parentElement)
-        this.showEl(this.toolbar.querySelector('#x-opacity-range').parentElement)
-    }
-    hideRestoreBtn() {
-        this.hideEl(this.toolbar.querySelector('#x-restore').parentElement)
-        this.hideEl(this.toolbar.querySelector('#x-remember-location').parentElement)
-        this.hideEl(this.toolbar.querySelector('#x-opacity-range').parentElement)
     }
     remove() {
         this.toolbar.remove()
@@ -88,14 +141,11 @@ class Toolbar {
         if (this.toolbar.parentElement == null)
             document.body.appendChild(this.toolbar)
     }
-    get parentElement() {
-        return this.toolbar.parentElement
-    }
 
     async onClick(event) {
         const target = event.target
-        // hideOtherElement(currentVideoElement)
         this.fixupInstance = extensionRule.getRule().fixup
+        // hideOtherElement(currentVideoElement)
         switch (target.id) {
             case 'x-popup':
                 this.doPopup()
@@ -107,10 +157,10 @@ class Toolbar {
                 this.doRemember()
                 break
             case 'x-setontop':
-                this.setOnTop()
+                this.alwaysOnTop = true
                 break
             case 'x-unsetontop':
-                this.unsetOnTop()
+                this.alwaysOnTop = false
                 break
             default:
                 break
@@ -119,7 +169,8 @@ class Toolbar {
     }
 
     async doPopup() {
-        this.fixupInstance && this.fixupInstance.beforeCreate(currentContainer, currentVideoElement, callbackForFixup)
+        isPopup = true
+        this.fixupInstance && this.fixupInstance.beforeCreate(currentContainer, currentVideoElement)
         const rect = currentContainer.getBoundingClientRect()
         videoHeight = rect.height
         videoWidth = rect.width
@@ -128,41 +179,40 @@ class Toolbar {
             height: rect.height,
             width: rect.width,
         })
-        this.showRestoreBtn()
-        this.hidePopupBtn()
-        console.log('popup window is created')
-        isPopup = true
+        this.restoreBtn = true
+        this.popupBtn = false
+        console.info('popup window is created')
         // currentContainer.scrollIntoView({
         //     behavior: "instant",
         //     block: "start",
         //     inline: "start"
         // });
         popupToolBar.display(currentVideoElement)
-        if (config.ontop && config.ontop === true) {
-            this.setOnTop()
+        if (config.supportNative) {
+            if (config.ontop)
+                this.alwaysOnTop = true
+            else
+                this.alwaysOnTop = false
         }
-        else {
-            this.unsetOnTop();
-        }
-        this.fixupInstance && this.fixupInstance.afterCreate(currentContainer, currentVideoElement, callbackForFixup)
+        this.fixupInstance && this.fixupInstance.afterCreate(currentContainer, currentVideoElement)
     }
 
     async doRestore() {
-        this.fixupInstance && this.fixupInstance.beforeDestory(currentContainer, currentVideoElement, callbackForFixup)
+        isPopup = false
+        this.fixupInstance && this.fixupInstance.beforeDestory(currentContainer, currentVideoElement)
         // 恢复前去除置顶
-        await this.unsetOnTop(true)
-        await this.changeOpacity(255)
+        this.alwaysOnTop = false
+        this.opacity = 255
         await browser.runtime.sendMessage({
             command: 'destory',
         })
 
-        isPopup = false
         console.log('popup window is destory')
         const el = document.querySelector('#popup-tool-style')
         el && el.remove()
-        this.showPopupBtn()
-        this.hideRestoreBtn()
-        this.fixupInstance && this.fixupInstance.afterDestory(currentContainer, currentVideoElement, callbackForFixup)
+        this.popupBtn = true;
+        this.restoreBtn = false;
+        this.fixupInstance && this.fixupInstance.afterDestory(currentContainer, currentVideoElement)
     }
     async doRemember() {
         await browser.runtime.sendMessage({
@@ -170,26 +220,6 @@ class Toolbar {
         })
     }
 
-    async setOnTop() {
-        this.showEl(this.toolbar.querySelector('#x-unsetontop').parentElement)
-        this.hideEl(this.toolbar.querySelector('#x-setontop').parentElement)
-        return browser.runtime.sendMessage({
-            command: 'setOnTop',
-        })
-    }
-
-    async unsetOnTop(hideBoth = false) {
-        if (hideBoth) {
-            this.hideEl(this.toolbar.querySelector('#x-setontop').parentElement)
-        }
-        else {
-            this.showEl(this.toolbar.querySelector('#x-setontop').parentElement)
-        }
-        this.hideEl(this.toolbar.querySelector('#x-unsetontop').parentElement)
-        return browser.runtime.sendMessage({
-            command: 'unsetOnTop',
-        })
-    }
     async changeOpacity(value) {
         await browser.runtime.sendMessage({
             command: 'changeOpacity',
@@ -202,10 +232,18 @@ const popupToolBar = new Toolbar()
 
 class Fixup {
     constructor() { }
-    matched(container, video, callback) { // 当fixup所在的规则成功匹配后 调用 matched
+    fixContainer(container) {
+        if (!(container instanceof HTMLElement)) return
+        currentContainer = container
+    }
+    fixVideoElement(video) {
+        if (!(video instanceof HTMLElement)) return
+        currentVideoElement = video
+    }
+    matched(container, video) { // 当fixup所在的规则成功匹配后 调用 matched
 
     }
-    beforeCreate(container, video, callback) {
+    beforeCreate(container, video) {
         // throw new Error('This meathod is not implemented')
     }
     afterCreate(container, video) {
@@ -424,13 +462,13 @@ const extensionRule = {
                     this.time = 0
                     this.paused = false
                 }
-                beforeCreate(container, video, callback) {
+                beforeCreate(container, video) {
                     this.time = video.currentTime
                     this.paused = video.paused
                     console.info('记录播放时间', this.time)
                     console.info('正在播放', !this.paused)
                 }
-                afterCreate(container, video, callback) {
+                afterCreate(container, video) {
                     setTimeout(() => {
                         const realWindow = window.wrappedJSObject
                         realWindow.GrayManager.reload(realWindow.GrayManager.playerParams)
@@ -443,9 +481,7 @@ const extensionRule = {
 
                         console.info('恢复播放时间', this.time)
                         console.info('设置播放中', !this.paused)
-                        callback({
-                            currentVideoElement: video
-                        })
+                        this.fixVideoElement = video
                     }, 1800)
                     setTimeout(() => {
                         if (document.querySelector(`[data-text="网页全屏"]`)) {
@@ -467,7 +503,7 @@ const extensionRule = {
                 constructor() {
                     super()
                 }
-                matched(container, video, callback) {
+                matched(container, video, ) {
 
                 }
                 afterCreate() {
@@ -601,7 +637,7 @@ const extensionRule = {
                 constructor() {
                     super()
                 }
-                beforeCreate(_, __, callback) {
+                beforeCreate(_, __, ) {
                     this.removeScrollbar()
                     this.triggerClick('[title="网页全屏"]')
                     // callback({
@@ -729,7 +765,7 @@ const extensionRule = {
                         console.assert(this.cacheObj.name === 'DEFAULT', 'fallback rule is not right')
                         console.info(`'${this.cacheObj.name}' policy is picked instead of '${obj.name}'`)
                     }
-                    this.cacheObj.fixup.matched(c, null, callbackForFixup)
+                    this.cacheObj.fixup.matched(c, null)
                     this.cacheObj.goodElementMapping = new WeakMap() //存放匹配成功的元素， 事件触发的element -> 自己或用selector获取的元素
                     break
                 }
@@ -803,24 +839,6 @@ function restoreStyleArrtibute(target) {
     target.setAttribute('style', target.dataset['style'])
     delete target.dataset['style']
 }
-
-
-
-
-function callbackForFixup(obj) {
-    // 根据obj修改变量
-    if (!obj) {
-        return
-    }
-    if (obj.currentContainer) {
-        currentContainer = obj.currentContainer
-    }
-    if (obj.currentVideoElement) [
-        currentVideoElement = obj.currentVideoElement
-    ]
-}
-
-
 
 /**
  * 查找可能的、相邻的 video 元素. 首先从target开始往祖先元素查找, 若找到元素的 id 或 className 包含 player 字符的元素则将它视为video容器元素, 再从这个容器元素里寻找符合条件的 video 元素
@@ -1030,7 +1048,6 @@ browser.runtime.onMessage.addListener(message => {
             // alert('the rule should not be DEFAULT')
             // throw new Error('the rule should not be DEFAULT')
             if (!selectableLayer) selectableLayer = new SelectableLayer()
-
             selectableLayer.display()
             return
         } else {
@@ -1056,6 +1073,8 @@ document.addEventListener('mouseover', main, {
     passive: true
 })
 
+
+// browser.runtime.sendMessage({ command: 'insertCSS' })
 
 let timeoutId = 0
 let currentEventCount = 0
@@ -1083,7 +1102,7 @@ document.addEventListener('mousemove', event => {
         main(event)
         return
     }
-    if (event.y <= 100) {
+    if (event.y <= 100) {// 鼠标的 y坐标 < 100 的情况显示工具栏，其他情况隐藏
         popupToolBar.display(document.body)
         return
     }
