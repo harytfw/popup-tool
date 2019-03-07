@@ -1,0 +1,21 @@
+{
+  "name": "popup-tool",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build":"web-ext build -i=native -s=src",
+    "build-ow":"web-ext build -i=native -s=src --overwrite-dest",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harytfw/popup-tool.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/harytfw/popup-tool/issues"
+  },
+  "homepage": "https://github.com/harytfw/popup-tool#readme"
+}

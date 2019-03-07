@@ -1,3 +1,4 @@
-[submodule "helper"]
-	path = helper
+
+[submodule "./helper-src"]
+	path = helper-src
 	url = https://github.com/harytfw/popuptool.helper.git
