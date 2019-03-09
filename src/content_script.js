@@ -335,120 +335,47 @@ const extensionRule = {
         {
             name: 'youtube',
             test: /https?:\/\/www\.youtube\.com\/watch\?v=.*/,
-            selector: '#player-container',
+            selector: '.video-stream',
             fixup: new class extends Fixup {
                 constructor() {
-                    // TODO: 修复youtube 进度条
                     super()
-                    this.style = null
-                    this.theaterFlag = undefined
-                    this.container = null
+                    this.iframe = null
+                    this.time = 0
                 }
                 matched() {
-                    const bottomControlBar = document.querySelector('.ytp-chrome-bottom')
-                    this.style = this.createStyle(`
-                        #masthead-container{
-                            display: none !important;
-                        }
-                        #page-manager{
-                            padding: 0px !important;
-                            margin: 0px !important;
-                        }
-                        #primary{
-                            padding: 0px !important;
-                            margin: 0px !important;
-                        }
-                        #player-theater-container{
-                            position: fixed !important;
-                            width: 100% !important;
-                            height: 100% !important;
-                            max-height: unset !important;
-                            z-index: 9 !important;
-                        }
-                        #player{
-                            width: 100% !important;
-                            height: 100% !important;
-                            position: fixed !important;
-                            z-index:999  !important;
-                        }
-                        #player-container-outer{
-                            margin: 0px !important;
-                            padding: 0px !important;
-                            height: 100% !important;
-                            width: 100% !important;
-                            position: relative !important;
-                            max-width: unset !important;
-                            min-height: unset !important;
-                        }
-                        #player-container-inner{
-                            height: 100% !important;
-                            width: 100% !important;
-                            box-sizing: border-box !important;
-                            margin: 0px !important;
-                            padding: 0px !important;
-                        }
-                        .html5-video-container{
-                            height: 100% !important;
-                        }
-                        .html5-main-video{
-                            width: 100% !important;
-                            height: 100% !important;
-                            left: 0px !important;
-                        }
-                        .ytp-chrome-bottom{
-                            /*width: ${100 - Math.round((24 / window.innerWidth) * 100)}% !important;*/
-                            bottom: 1.1% !important;
-                        }
-                    `)
-                    this.style.id = 'youtube-popup-style'
                 }
-                beforeCreate(container, video, cb) {
-                    this.container = container
-                    if (this.isTheaterMode()) {
-                        cb({
-                            currentContainer: video
+                beforeCreate(_, video) {
+                    video.pause()
+                    this.time = Math.floor(video.currentTime)
+                    const vid = new URL(location.href).searchParams.get('v')
+                    this.iframe = document.createElement('iframe')
+                    this.iframe.src = `${location.origin}/embed/${vid}?t=${Math.floor(this.time)}`
+                }
+                afterCreate(currentContainer, currentVideoElement) {
+                    document.body.appendChild(this.iframe)
+                    this.iframe.onload = () => {
+                        this.iframeVideo.currentTime = this.time
+                        this.iframe.contentDocument.addEventListener('mousemove', (e) => {
+                            document.dispatchEvent(new MouseEvent('mousemove', { clientX: e.clientX, clientY: e.clientY, target: null, bubbles: true }))
                         })
                     }
-                }
-                afterCreate(container, video, cb) {
-                    document.head.appendChild(this.style)
-                    this.removeScrollbar()
-                    if (!this.isTheaterMode()) {
-                        this.theaterFlag = false
-                    }
-                    else {
-                        cb({
-                            currentContainer: this.container
-                        })
-                        this.theaterFlag = true
-                        // exit theater mode
-                        this.triggerClick('.ytp-size-button')
-                    }
-                    setTimeout(() => {
-                        // enter theater mode
-                        this.triggerClick('.ytp-size-button')
-                    }, 400)
 
+                    this.removeScrollbar()
+                    this.setFullWindow(this.iframe)
                 }
-                afterDestory(container, video) {
-                    this.style.remove()
+                afterDestory(currentContainer, currentVideoElement) {
+                    this.time = this.iframeVideo.currentTime
+                    currentVideoElement.currentTime = this.time
                     this.restoreScrollbar()
-                    if (this.theaterFlag === false) {
-                        this.triggerClick('.ytp-size-button')
-                    }
-                    this.theaterFlag = undefined
+                    this.unsetFullWindow(this.iframe)
+                    this.iframe.remove()
                 }
-                isTheaterMode() {
-                    const btn = document.querySelector('.ytp-size-button')
-                    if (!btn) return false
-                    //                   us       zh_cn   uk        german
-                    const keywords = ['Theater', '剧场', 'Cinema', 'Kinomodus']
-                    for (const k of keywords) {
-                        if (btn.title.startsWith(k)) {
-                            return false
-                        }
-                    }
-                    return true
+
+                /**
+                 * @returns {HTMLVideoElement}
+                 */
+                get iframeVideo() {
+                    return this.iframe.contentDocument.querySelector('#player video')
                 }
             }
         },
