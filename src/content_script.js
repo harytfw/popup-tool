@@ -19,7 +19,10 @@ class Toolbar {
         this.toolbar = document.createElement('div')
         this.toolbar.id = 'popup-tool'
         this.fixupInstance = null
-
+        this.timeoutId = -1
+        this.timer = () => {
+            this.remove()
+        }
         const html = `
         <div ><button id='x-popup' type='button'>${browser.i18n.getMessage('toolbar_popup')}</button></div>
         <div style='display:none;'><button id='x-restore' type='button'>${browser.i18n.getMessage('toolbar_restore')}</button></div>
@@ -46,12 +49,13 @@ class Toolbar {
 
     }
     display(locator) {
-
         const rect = locator.getBoundingClientRect()
         this.toolbar.style.left = `${Math.max(5, rect.left)}px`
         this.toolbar.style.top = `${Math.max(5, rect.top)}px`
         this.toolbar.style.display = ''
         this.mount()
+        window.clearTimeout(this.timeoutId)
+        this.timeoutId = setTimeout(this.timer, 2000)
     }
 
     /**
@@ -218,6 +222,10 @@ class Toolbar {
         await browser.runtime.sendMessage({
             command: 'rememberLocation'
         })
+        this.toolbar.querySelector('#x-remember-location').textContent += "  ✔"
+        setTimeout(() => {
+            this.toolbar.querySelector('#x-remember-location').textContent = browser.i18n.getMessage('toolbar_remember')
+        }, 2000)
     }
 
     async changeOpacity(value) {
@@ -396,26 +404,26 @@ const extensionRule = {
                     console.info('正在播放', !this.paused)
                 }
                 afterCreate(container, video) {
-                    setTimeout(() => {
-                        const realWindow = window.wrappedJSObject
-                        realWindow.GrayManager.reload(realWindow.GrayManager.playerParams)
-                    }, 500)
-                    setTimeout(() => {
-                        // 因为上面代码用GrayManage刷新视频, 导致参数 video 指向已经消失的元素 
-                        video = document.querySelector('.player video'); // 重新获取video
-                        !this.paused && video.play()
-                        video.currentTime = this.time
+                    // setTimeout(() => {
+                    //     const realWindow = window.wrappedJSObject
+                    //     realWindow.GrayManager.reload(realWindow.GrayManager.playerParams)
+                    // }, 500)
+                    // setTimeout(() => {
+                    //     // 因为上面代码用GrayManage刷新视频, 导致参数 video 指向已经消失的元素 
+                    //     video = document.querySelector('.player video'); // 重新获取video
+                    //     !this.paused && video.play()
+                    //     video.currentTime = this.time
 
-                        console.info('恢复播放时间', this.time)
-                        console.info('设置播放中', !this.paused)
-                        this.fixVideoElement = video
-                    }, 1800)
+                    //     console.info('恢复播放时间', this.time)
+                    //     console.info('设置播放中', !this.paused)
+                    //     this.fixVideoElement = video
+                    // }, 1800)
                     setTimeout(() => {
                         if (document.querySelector(`[data-text="网页全屏"]`)) {
                             this.triggerClick('.bilibili-player-video-web-fullscreen')
                             // this.triggerClick(`[name="web_fullscreen"]`)
                         }
-                    }, 2000)
+                    }, 100)
                 }
                 afterDestory() {
                     this.triggerClick('.bilibili-player-video-web-fullscreen')
@@ -445,7 +453,7 @@ const extensionRule = {
         {
             name: 'bilibili_bangumi',
             test: /https?:\/\/www\.bilibili\.com\/bangumi\/.*/,
-            selector: '.player',
+            selector: '#bofqi',
             tagName: ['video'],
             fixup: new class extends Fixup {
                 constructor() {
@@ -987,7 +995,6 @@ document.addEventListener('mouseover', main, {
 
 // browser.runtime.sendMessage({ command: 'insertCSS' })
 
-let timeoutId = 0
 let currentEventCount = 0
 const timeToRemove = 2000
 const MAX_EVENT_COUNT = 30 // 限制 mousemove 的触发频率
