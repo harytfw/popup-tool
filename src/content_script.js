@@ -48,8 +48,8 @@ class Toolbar {
     display(locator) {
 
         const rect = locator.getBoundingClientRect()
-        this.toolbar.style.left = `${rect.left}px`
-        this.toolbar.style.top = `${rect.top}px`
+        this.toolbar.style.left = `${Math.max(5, rect.left)}px`
+        this.toolbar.style.top = `${Math.max(5, rect.top)}px`
         this.toolbar.style.display = ''
         this.mount()
     }
