@@ -334,8 +334,8 @@ const extensionRule = {
 
         {
             name: 'youtube',
-            test: /https?:\/\/www\.youtube\.com\/watch\?v=.*/,
-            selector: '.video-stream',
+            test: /https?:\/\/www\.youtube\.com\/watch\?v=\w*/,
+            selector: '#ytd-player',
             fixup: new class extends Fixup {
                 constructor() {
                     super()
