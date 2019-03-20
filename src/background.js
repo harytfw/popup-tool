@@ -145,13 +145,20 @@ async function updatePopupWindow(options = {
 var nativePort = browser.runtime.connectNative(
     "popuptool.helper"
 )
-try {
-    nativePort.postMessage('test message')
-    browser.storage.local.set({ supportNative: true })
+async function checkNative() {
+    try {
+
+        nativePort.postMessage('test message')
+        browser.storage.local.set({ supportNative: true })
+    }
+    catch (e) {
+        console.error(e)
+        browser.storage.local.set({ supportNative: false })
+    }
 }
-catch (e) {
-    browser.storage.local.set({ supportNative: false })
-}
+setTimeout(() => {
+    checkNative()
+}, 2000)
 browser.runtime.onMessage.addListener(async (message, sender) => {
     if (message.command === 'create') {
         await createPopupWindow({
@@ -259,7 +266,7 @@ browser.runtime.onInstalled.addListener(detail => {
             lastHeight: 480,
             lastWidth: 640,
             fixhistory: false,
-            supportNative:false,
+            supportNative: false,
         })
     }
 })
