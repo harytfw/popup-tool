@@ -192,7 +192,20 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
             },
             tabId: sender.tab.id
         })
-    } else if (message.command === 'rememberLocation') {
+    }
+    else if (message.command === 'notAvailablePopup') {
+        browser.browserAction.setTitle({
+            title: browser.i18n.getMessage('browserAction_disable'),
+            tabId: sender.tab.id
+        })
+        browser.browserAction.setIcon({
+            path: {
+                96: browser.runtime.getURL('p-disable.png')
+            },
+            tabId: sender.tab.id
+        })
+    }
+    else if (message.command === 'rememberLocation') {
         const win = await browser.windows.get(sender.tab.windowId)
         browser.storage.local.set({
             lastLeft: win.left,

@@ -46,7 +46,6 @@ class Toolbar {
             rangeInput.title = browser.i18n.getMessage('opacity', rangeInput.value)
             this.opacity = rangeInput.value
         })
-
     }
     display(locator) {
         const rect = locator.getBoundingClientRect()
@@ -343,7 +342,7 @@ const extensionRule = {
         {
             name: 'youtube',
             test: /https?:\/\/www\.youtube\.com\/watch\?v=\w*/,
-            selector: '#ytd-player',
+            selector: 'ytd-player#ytd-player',
             fixup: new class extends Fixup {
                 constructor() {
                     super()
@@ -660,7 +659,11 @@ const extensionRule = {
     ],
     getRule(force = false) {
         // force: 强制重新获取规则
+        
         if (this.first || force) {
+            browser.runtime.sendMessage({
+                command: 'notAvailablePopup'
+            })
             this.first = false
             for (const obj of this.rules) {
                 let f = false
@@ -671,7 +674,6 @@ const extensionRule = {
                 }
                 if (f) {
                     const c = obj.selector ? document.querySelector(obj.selector) : null
-
                     if (c && obj.name !== 'DEFAULT') {
                         browser.runtime.sendMessage({
                             command: 'availablePopup'
@@ -993,7 +995,32 @@ document.addEventListener('mouseover', main, {
 })
 
 
-// browser.runtime.sendMessage({ command: 'insertCSS' })
+// Hook pushState API in youtube, so we can recheck the using rule
+// due to the "Xray vision", we can not directly hook "boundHistoryPushState", then use "eval" to hook this api
+window.eval(`
+    setTimeout(()=>{
+        // hook pushState API
+        if (/www\.youtube\.com/.test(location.host)) {
+            const man = document.querySelector("#historyManager")
+            if (man && "boundHistoryPushState_" in man) {
+                console.info("Hook boundHistoryPushState_")
+                man.boundHistoryPushState_ = function (a, b, c) {
+                    history.pushState(a, b, c)
+                    window.postMessage("RecheckRule")
+                }
+            }
+        }
+    },1500);
+`);
+window.addEventListener("message", function (event) {
+    // it should be safe that we only set the variable extensionRule.first
+    // so there is no more security check
+    if (event.data === "RecheckRule") {
+        console.log("Recheck the rule")
+        extensionRule.first = true
+    }
+});
+
 
 let currentEventCount = 0
 const timeToRemove = 2000
