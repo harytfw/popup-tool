@@ -633,6 +633,22 @@ const extensionRule = {
             }
         },
         {
+            name: 'huomao-zhuanti',
+            test: /https?:\/\/www\.huomao\.com\/zt\/.*/,
+            selector: '#playing-box-root',
+            fixup: new class extends Fixup {
+                constructor() { super() }
+                afterCreate() {
+                    this.removeScrollbar()
+                    this.triggerClick('.page-full-screen')
+                }
+                afterDestory() {
+                    this.restoreScrollbar()
+                    this.triggerClick('.page-full-screen')
+                }
+            }
+        },
+        {
             name: 'DEFAULT',
             test: /./,
             tagName: ['video', 'object', 'embed'],
@@ -996,7 +1012,8 @@ document.addEventListener('mouseover', main, {
 
 
 // Hook pushState API in youtube, so we can recheck the using rule
-// due to the "Xray vision", we can not directly hook "boundHistoryPushState", then use "eval" to hook this api
+// due to the "Xray vision", we can not directly hook "boundHistoryPushState"
+// post Message after boundHistoryPushState_ is called
 window.eval(`
     setTimeout(()=>{
         // hook pushState API
@@ -1012,6 +1029,7 @@ window.eval(`
         }
     },1500);
 `);
+
 window.addEventListener("message", function (event) {
     // it should be safe that we only set the variable extensionRule.first
     // so there is no more security check
