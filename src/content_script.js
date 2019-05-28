@@ -336,7 +336,8 @@ class Fixup {
 
 const extensionRule = {
     cacheObj: null, // {regexp:/./,selector:'',tagName:[],goodElements:[]} 缓存匹配到的规则
-    first: true,
+    recheckCount: 0,
+    MAX_RECHECK_COUNT: 30,
     rules: [
 
         {
@@ -675,12 +676,12 @@ const extensionRule = {
     ],
     getRule(force = false) {
         // force: 强制重新获取规则
-        
-        if (this.first || force) {
+
+        if (this.recheckCount < this.MAX_RECHECK_COUNT || force) {
             browser.runtime.sendMessage({
                 command: 'notAvailablePopup'
             })
-            this.first = false
+            this.recheckCount++;
             for (const obj of this.rules) {
                 let f = false
                 if (obj.test instanceof RegExp && obj.test.test(location.href)) {
@@ -696,14 +697,20 @@ const extensionRule = {
                         })
                         this.cacheObj = obj
                         console.info(`'${this.cacheObj.name}' policy is picked`)
+                        this.recheckCount = this.MAX_RECHECK_COUNT
+                        this.cacheObj.fixup.matched(c, null)
+                        this.cacheObj.goodElementMapping = new WeakMap() //存放匹配成功的元素， 事件触发的element -> 自己或用selector获取的元素
                     }
                     else if (!c) {
                         this.cacheObj = this.rules.filter(o => o.name === 'DEFAULT')[0]
-                        console.assert(this.cacheObj.name === 'DEFAULT', 'fallback rule is not right')
-                        console.info(`'${this.cacheObj.name}' policy is picked instead of '${obj.name}'`)
+                        // console.assert(this.cacheObj.name === 'DEFAULT', 'fallback rule is not right')
+                        // console.info(`'${this.cacheObj.name}' policy is picked instead of '${obj.name}'`)
+                        if (this.recheckCount === 1) {
+                            // 保障只在第1次执行
+                            this.cacheObj.fixup.matched(c, null)
+                            this.cacheObj.goodElementMapping = new WeakMap()
+                        }
                     }
-                    this.cacheObj.fixup.matched(c, null)
-                    this.cacheObj.goodElementMapping = new WeakMap() //存放匹配成功的元素， 事件触发的element -> 自己或用selector获取的元素
                     break
                 }
             }
@@ -1035,7 +1042,7 @@ window.addEventListener("message", function (event) {
     // so there is no more security check
     if (event.data === "RecheckRule") {
         console.log("Recheck the rule")
-        extensionRule.first = true
+        extensionRule.recheckCount = 0
     }
 });
 
